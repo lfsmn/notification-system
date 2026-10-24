@@ -8,7 +8,7 @@ Content-Type: application/json
   "recipient": "+905551234567",
   "content": "Flash sale başladı!",
   "priority": "high",
-  "idempotency_key": "test-001"
+  "idempotency_key": "test-005"
 }
 
 ###  Valid Request

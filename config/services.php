@@ -34,5 +34,10 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    
+    'notification_provider' => [
+        'url' => env('NOTIFICATION_PROVIDER_URL'),
+        'timeout' => (int) env('NOTIFICATION_PROVIDER_TIMEOUT', 5),
+    ],
 
 ];

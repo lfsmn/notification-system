@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\NotificationStatus;
 use App\Models\Notification;
+use App\Jobs\SendNotification;
 
 class NotificationService
 {
@@ -16,7 +17,8 @@ class NotificationService
         $notification = $key === null ? Notification::create($data) : Notification::createOrFirst(['idempotency_key' => $key], $data);
 
         if ($notification->wasRecentlyCreated && $notification->status === NotificationStatus::Queued) {
-            //kuyruğa eklenecek
+            
+            SendNotification::dispatch($notification->id)->onQueue($notification->priority->value);
         }
 
         return $notification;
