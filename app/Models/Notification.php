@@ -14,6 +14,11 @@ class Notification extends Model
 {
     use HasFactory, HasUuids;
 
+    protected $attributes = [
+        'priority' => 'normal',
+        'attempts' => 0,
+    ];
+
     protected $fillable = [
         'batch_id',
         'channel',
@@ -36,7 +41,7 @@ class Notification extends Model
             'sent_at' => 'datetime',
             'failed_at' => 'datetime',
         ];
-    } 
+    }
 
     public function batch(): BelongsTo
     {

@@ -1,0 +1,46 @@
+### Valid Request
+POST http://notification-system.test/api/v1/notifications
+Accept: application/json
+Content-Type: application/json
+
+{
+  "channel": "sms",
+  "recipient": "+905551234567",
+  "content": "Flash sale başladı!",
+  "priority": "high",
+  "idempotency_key": "test-001"
+}
+
+###  Valid Request
+POST http://notification-system.test/api/v1/notifications
+Accept: application/json
+Content-Type: application/json
+
+{
+  "channel": "email",
+  "recipient": "elifosmanoglu14@gmail.com",
+  "content": "<p><b>Merhaba!</b></p>",
+  "priority": "high"
+}
+
+### Invalid Request (invalid channel)
+POST http://notification-system.test/api/v1/notifications
+Accept: application/json
+Content-Type: application/json
+
+{
+  "channel": "fax",
+  "recipient": "abc",
+  "content": ""
+}
+
+### Invalid Request (invalid recipient)
+POST http://notification-system.test/api/v1/notifications
+Accept: application/json
+Content-Type: application/json
+
+{
+  "channel": "sms",
+  "recipient": "elif",
+  "content": ""
+}
