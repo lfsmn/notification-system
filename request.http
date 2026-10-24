@@ -8,7 +8,7 @@ Content-Type: application/json
   "recipient": "+905551234567",
   "content": "Flash sale başladı!",
   "priority": "high",
-  "idempotency_key": "test-005"
+  "idempotency_key": "test-006"
 }
 
 ###  Valid Request
@@ -83,4 +83,8 @@ Accept: application/json
 
 ### Invalid Id
 GET http://notification-system.test/api/v1/notifications/abc
+Accept: application/json
+
+### Cancel Notification
+POST http://notification-system.test/api/v1/notifications/01a1700a-2932-72e8-be0b-1ff0ef8d8d9f/cancel
 Accept: application/json

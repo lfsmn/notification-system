@@ -66,4 +66,18 @@ class NotificationService
             ->withQueryString();
     }
 
+    public function cancel(Notification $notification): bool
+    {
+        $cancellable = array_filter(
+            NotificationStatus::cases(),
+            fn (NotificationStatus $status) => $status->isCancellable(),
+        );
+
+        $updated = Notification::where('id', $notification->id)
+            ->whereIn('status', $cancellable)
+            ->update(['status' => NotificationStatus::Cancelled]);
+
+        return $updated === 1;
+    }
+
 }

@@ -72,4 +72,17 @@ class NotificationController extends Controller
             $this->service->search($request->validated())
         );
     }
+
+    public function cancel(Notification $notification): JsonResponse
+    {
+        if (!$this->service->cancel($notification)) {
+            $notification->refresh();
+
+            return response()->json([
+                'message' => "Notification cannot be cancelled in status '{$notification->status->value}'.",
+            ], 409);
+        }
+
+        return (new NotificationResource($notification->refresh()))->response();
+    }
 }

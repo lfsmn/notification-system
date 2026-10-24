@@ -9,4 +9,5 @@ Route::prefix('v1')->group(function () {
     Route::post('notifications/batch', [NotificationController::class, 'storeBatch']);
     Route::get('notifications/{notification}', [NotificationController::class, 'show'])->whereUuid('notification');
     Route::get('batches/{batch}', [NotificationController::class, 'showBatch'])->whereUuid('batch');
+    Route::post('notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->whereUuid('notification');
 });
