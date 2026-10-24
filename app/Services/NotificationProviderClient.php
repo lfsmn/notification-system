@@ -5,23 +5,33 @@ namespace App\Services;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use App\Exceptions\ProviderException;
+use Illuminate\Http\Client\ConnectionException;
 
 class NotificationProviderClient
 {
     public function send(Notification $notification): string
     {
-        $response = Http::timeout(config('services.notification_provider.timeout'))
-            ->acceptJson()
-            ->post(config('services.notification_provider.url'), [
-                'to' => $notification->recipient,
-                'channel' => $notification->channel->value,
-                'content' => $notification->content,
-            ]);
-
-        if ($response->status() !== 202) {
-            throw new RuntimeException("Provider returned HTTP {$response->status()}");
+       try {
+            $response = Http::timeout(config('services.notification_provider.timeout'))
+                ->acceptJson()
+                ->withHeaders(['Idempotency-Key' => $notification->id])
+                ->post(config('services.notification_provider.url'), [
+                    'to' => $notification->recipient,
+                    'channel' => $notification->channel->value,
+                    'content' => $notification->content,
+                ]);
+        } catch (ConnectionException $e) {
+            throw new ProviderException('Provider connection failed: '.$e->getMessage(), retryable: true);
         }
 
-        return $response->json('messageId');
+        if ($response->status() === 202) {
+            return (string) $response->json('messageId');
+        }
+
+        $retryable = $response->status() === 429 || $response->serverError();
+
+        throw new ProviderException("Provider returned HTTP {$response->status()}", $retryable);
+    
     }
 }
