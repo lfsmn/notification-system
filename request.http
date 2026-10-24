@@ -44,3 +44,27 @@ Content-Type: application/json
   "recipient": "elif",
   "content": ""
 }
+
+### Create Valid Batch
+POST http://notification-system.test/api/v1/notifications/batch
+Accept: application/json
+Content-Type: application/json
+
+{
+  "notifications": [
+    { "channel": "sms", "recipient": "+905551234567", "content": "Batch SMS", "priority": "high", "idempotency_key": "batch-1-a" },
+    { "channel": "email", "recipient": "test@example.com", "content": "Batch e-posta", "priority": "low", "idempotency_key": "batch-1-b" }
+  ]
+}
+
+### Create Invalid Batch
+POST http://notification-system.test/api/v1/notifications/batch
+Accept: application/json
+Content-Type: application/json
+
+{
+  "notifications": [
+    { "channel": "fax", "recipient": "+905551234567", "content": "Batch SMS", "priority": "high", "idempotency_key": "batch-2-a" },
+    { "channel": "email", "recipient": "test@example.com", "content": "Batch e-posta", "priority": "low", "idempotency_key": "batch-2-b" }
+  ]
+}

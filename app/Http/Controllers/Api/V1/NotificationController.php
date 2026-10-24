@@ -7,6 +7,7 @@ use App\Http\Requests\StoreNotificationRequest;
 use App\Http\Resources\NotificationResource;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\StoreNotificationBatchRequest;
 
 class NotificationController extends Controller
 {
@@ -19,5 +20,18 @@ class NotificationController extends Controller
         return (new NotificationResource($notification))
             ->response()
             ->setStatusCode($notification->wasRecentlyCreated ? 202 : 200);
+    }
+
+    public function storeBatch(StoreNotificationBatchRequest $request): JsonResponse
+    {
+        [$batch, $notifications] = $this->service->createBatch($request->validated('notifications'));
+
+        return response()->json([
+            'data' => [
+                'batch_id' => $batch->id,
+                'total_count' => $batch->total_count,
+                'notifications' => NotificationResource::collection($notifications),
+            ],
+        ], 202);
     }
 }

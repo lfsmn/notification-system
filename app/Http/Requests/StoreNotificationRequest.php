@@ -19,16 +19,20 @@ class StoreNotificationRequest extends FormRequest
 
     public function rules(): array
     {
-        $input = $this->input('channel');
-        $channel = is_string($input) ? Channel::tryFrom($input) : null;
+        return self::notificationRules($this->input('channel'));
+    }
+
+    public static function notificationRules(mixed $channelInput, string $prefix = ''): array
+    {
+        $channel = is_string($channelInput) ? Channel::tryFrom($channelInput) : null;
 
         return [
-            'channel' => ['required', Rule::enum(Channel::class)],
-            'recipient' => ['required', 'string', 'max:255', ...($channel?->recipientRules() ?? [])],
-            'content' => ['required', 'string', 'max:' . ($channel?->maxContentLength() ?? 10000)],
-            'priority' => ['sometimes', Rule::enum(Priority::class)],
-            'scheduled_at' => ['nullable', 'date', 'after:now'],
-            'idempotency_key' => ['nullable', 'string', 'max:255'],
+            $prefix.'channel' => ['required', Rule::enum(Channel::class)],
+            $prefix.'recipient' => ['required', 'string', 'max:255', ...($channel?->recipientRules() ?? [])],
+            $prefix.'content' => ['required', 'string', 'max:'.($channel?->maxContentLength() ?? 10000)],
+            $prefix.'priority' => ['sometimes', Rule::enum(Priority::class)],
+            $prefix.'scheduled_at' => ['nullable', 'date', 'after:now'],
+            $prefix.'idempotency_key' => ['nullable', 'string', 'max:255'],
         ];
     }
 }
