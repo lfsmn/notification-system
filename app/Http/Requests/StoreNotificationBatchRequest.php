@@ -14,6 +14,7 @@ class StoreNotificationBatchRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
+            'idempotency_key' => ['nullable', 'string', 'max:255'],
             'notifications' => ['required', 'array', 'min:1', 'max:1000'],
             'notifications.*' => ['required', 'array'],
             'notifications.*.idempotency_key' => ['distinct'],

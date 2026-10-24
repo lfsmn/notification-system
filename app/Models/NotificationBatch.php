@@ -11,7 +11,7 @@ class NotificationBatch extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['total_count'];
+    protected $fillable = ['total_count', 'idempotency_key'];
 
     public function notifications(): HasMany
     {

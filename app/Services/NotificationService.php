@@ -8,6 +8,7 @@ use App\Jobs\SendNotification;
 use App\Models\NotificationBatch;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 class NotificationService
 {
@@ -21,21 +22,54 @@ class NotificationService
     }
 
 
-     public function createBatch(array $items): array
+    /**
+     * @return array{0: NotificationBatch, 1: Notification[], 2: bool}
+     */
+    public function createBatch(array $items, ?string $batchKey = null): array
     {
-        [$batch, $notifications] = DB::transaction(function () use ($items) {
-            $batch = NotificationBatch::create(['total_count' => count($items)]);
+        if ($batchKey !== null && $existing = $this->findBatch($batchKey)) {
+            return $this->batchResult($existing);
+        }
 
-            $notifications = array_map(fn (array $item) => $this->store([...$item, 'batch_id' => $batch->id]), $items);
+        try {
+            [$batch, $notifications] = DB::transaction(function () use ($items, $batchKey) {
+                $batch = NotificationBatch::create([
+                    'total_count' => count($items),
+                    'idempotency_key' => $batchKey,
+                ]);
 
-            return [$batch, $notifications];
-        });
+                $notifications = array_map(
+                    fn (array $item) => $this->store([...$item, 'batch_id' => $batch->id]),
+                    $items,
+                );
+
+                return [$batch, $notifications];
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            $existing = $batchKey !== null ? $this->findBatch($batchKey) : null;
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            return $this->batchResult($existing);
+        }
 
         foreach ($notifications as $notification) {
             $this->dispatchIfNeeded($notification);
         }
 
-        return [$batch, $notifications];
+        return [$batch, $notifications, true];
+    }
+
+    private function findBatch(string $key): ?NotificationBatch
+    {
+        return NotificationBatch::where('idempotency_key', $key)->first();
+    }
+
+    private function batchResult(NotificationBatch $batch): array
+    {
+        return [$batch, $batch->notifications()->orderBy('id')->get()->all(), false];
     }
 
     private function store(array $data): Notification

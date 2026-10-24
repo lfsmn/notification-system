@@ -28,15 +28,16 @@ class NotificationController extends Controller
 
     public function storeBatch(StoreNotificationBatchRequest $request): JsonResponse
     {
-        [$batch, $notifications] = $this->service->createBatch($request->validated('notifications'));
+        [$batch, $notifications, $created] = $this->service->createBatch($request->validated('notifications'), $request->validated('idempotency_key'));
 
         return response()->json([
             'data' => [
                 'batch_id' => $batch->id,
+                'idempotency_key' => $batch->idempotency_key,
                 'total_count' => $batch->total_count,
                 'notifications' => NotificationResource::collection($notifications),
             ],
-        ], 202);
+        ], $created ? 202 : 200);
     }
 
     public function show(Notification $notification): NotificationResource
