@@ -26,7 +26,6 @@ return new class extends Migration
             $table->timestamp('scheduled_at')->nullable();
             $table->timestamp('sent_at')->nullable();
             $table->timestamp('failed_at')->nullable();
-            $table->timestamps();
 
             $table->index(['status', 'scheduled_at']);
             $table->index(['status', 'created_at']);
