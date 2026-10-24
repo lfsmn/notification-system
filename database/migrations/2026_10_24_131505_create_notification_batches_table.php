@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('notification_batches', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->unsignedInteger('total_count');
             $table->timestamps();
         });
     }
