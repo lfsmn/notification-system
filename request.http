@@ -52,8 +52,8 @@ Content-Type: application/json
 
 {
   "notifications": [
-    { "channel": "sms", "recipient": "+905551234567", "content": "Batch SMS", "priority": "high", "idempotency_key": "batch-1-a" },
-    { "channel": "email", "recipient": "test@example.com", "content": "Batch e-posta", "priority": "low", "idempotency_key": "batch-1-b" }
+    { "channel": "sms", "recipient": "+905551234567", "content": "Batch SMS", "priority": "high", "idempotency_key": "batch-2-a" },
+    { "channel": "email", "recipient": "test@example.com", "content": "Batch e-posta", "priority": "low", "idempotency_key": "batch-2-b" }
   ]
 }
 
@@ -68,3 +68,19 @@ Content-Type: application/json
     { "channel": "email", "recipient": "test@example.com", "content": "Batch e-posta", "priority": "low", "idempotency_key": "batch-2-b" }
   ]
 }
+
+### Notification Info
+GET http://notification-system.test/api/v1/notifications/01a16ff1-1418-71b1-8b3e-2689cd74ec7e
+Accept: application/json
+
+### Batch Summary
+GET http://notification-system.test/api/v1/batches/01a16ff9-f2b6-731b-9679-a593001b1530
+Accept: application/json
+
+### Listing
+GET http://notification-system.test/api/v1/notifications?status=sent&channel=sms&per_page=5
+Accept: application/json
+
+### Invalid Id
+GET http://notification-system.test/api/v1/notifications/abc
+Accept: application/json

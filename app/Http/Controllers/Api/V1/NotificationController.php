@@ -8,6 +8,10 @@ use App\Http\Resources\NotificationResource;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\StoreNotificationBatchRequest;
+use App\Models\Notification;
+use App\Enums\NotificationStatus;
+use App\Models\NotificationBatch;
+use App\Http\Requests\ListNotificationsRequest;
 
 class NotificationController extends Controller
 {
@@ -33,5 +37,39 @@ class NotificationController extends Controller
                 'notifications' => NotificationResource::collection($notifications),
             ],
         ], 202);
+    }
+
+    public function show(Notification $notification): NotificationResource
+    {
+        return new NotificationResource($notification);
+    }
+
+    public function showBatch(NotificationBatch $batch): JsonResponse
+    {
+        $counts = $batch->notifications()
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $statusCounts = [];
+        foreach (NotificationStatus::cases() as $status) {
+            $statusCounts[$status->value] = (int) ($counts[$status->value] ?? 0);
+        }
+
+        return response()->json([
+            'data' => [
+                'batch_id' => $batch->id,
+                'total_count' => $batch->total_count,
+                'status_counts' => $statusCounts,
+                'created_at' => $batch->created_at->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function index(ListNotificationsRequest $request)
+    {
+        return NotificationResource::collection(
+            $this->service->search($request->validated())
+        );
     }
 }

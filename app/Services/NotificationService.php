@@ -7,6 +7,7 @@ use App\Models\Notification;
 use App\Jobs\SendNotification;
 use App\Models\NotificationBatch;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class NotificationService
 {
@@ -50,6 +51,19 @@ class NotificationService
         if ($notification->wasRecentlyCreated && $notification->status === NotificationStatus::Queued) {
             SendNotification::dispatch($notification->id)->onQueue($notification->priority->value);
         }
+    }
+
+    public function search(array $filters): LengthAwarePaginator
+    {
+        return Notification::query()
+            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['channel'] ?? null, fn ($query, $channel) => $query->where('channel', $channel))
+            ->when($filters['batch_id'] ?? null, fn ($query, $batchId) => $query->where('batch_id', $batchId))
+            ->when($filters['from'] ?? null, fn ($query, $from) => $query->where('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($query, $to) => $query->where('created_at', '<=', $to))
+            ->orderByDesc('created_at')
+            ->paginate($filters['per_page'] ?? 20)
+            ->withQueryString();
     }
 
 }
