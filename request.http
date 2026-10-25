@@ -70,6 +70,26 @@ Content-Type: application/json
   ]
 }
 
+### Create Batch for rate limit per sec (use 2 sec to see)
+POST http://notification-system.test/api/v1/notifications/batch
+Accept: application/json
+Content-Type: application/json
+
+{
+  "notifications": [
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 1" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 2" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 3" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 4" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 5" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 6" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 7" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 8" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 9" },
+    { "channel": "sms", "recipient": "+905551234567", "content": "Rate test 10" }
+  ]
+}
+
 ### Notification Info
 GET http://notification-system.test/api/v1/notifications/01a16ff1-1418-71b1-8b3e-2689cd74ec7e
 Accept: application/json

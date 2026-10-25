@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use App\Exceptions\ProviderException;
 use Illuminate\Support\Facades\DB;
 use Throwable;
+use Illuminate\Support\Facades\RateLimiter;
 
 class SendNotification implements ShouldQueue
 {
@@ -36,6 +37,22 @@ class SendNotification implements ShouldQueue
      */
     public function handle(NotificationProviderClient $provider): void
     {
+        $notification = Notification::find($this->notificationId);
+
+        if ($notification === null || $notification->status !== NotificationStatus::Queued) {
+            Log::info('Notification skipped', ['notification_id' => $this->notificationId]);
+
+            return;
+        }
+
+        if (!$this->acquireRateLimitSlot($notification)) {
+            self::dispatch($notification->id)
+                ->onQueue($notification->priority->value)
+                ->delay(now()->addSecond());
+
+            return;
+        }
+
         $claimed = Notification::where('id', $this->notificationId)
             ->where('status', NotificationStatus::Queued)
             ->update([
@@ -49,7 +66,7 @@ class SendNotification implements ShouldQueue
             return;
         }
 
-        $notification = Notification::findOrFail($this->notificationId);
+        $notification->refresh();
 
         try {
             $messageId = $provider->send($notification);
@@ -122,5 +139,13 @@ class SendNotification implements ShouldQueue
         $base = self::BASE_DELAY_SECONDS * (self::BACKOFF_MULTIPLIER ** ($attempt - 1));
 
         return $base + random_int(0, intdiv($base, 5));
+    }
+
+    private function acquireRateLimitSlot(Notification $notification): bool
+    {
+        $key = 'provider-rate:'.$notification->channel->value;
+        $limit = config('services.notification_provider.rate_limit_per_second');
+
+        return RateLimiter::hit($key, 1) <= $limit;
     }
 }

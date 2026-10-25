@@ -38,6 +38,8 @@ return [
     'notification_provider' => [
         'url' => env('NOTIFICATION_PROVIDER_URL'),
         'timeout' => (int) env('NOTIFICATION_PROVIDER_TIMEOUT', 5),
+        'rate_limit_per_second' => (int) env('NOTIFICATION_RATE_LIMIT_PER_SECOND', 100),
+
     ],
 
 ];
