@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use App\Exceptions\ProviderException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Context;
 
 class NotificationProviderClient
 {
@@ -15,7 +16,10 @@ class NotificationProviderClient
        try {
             $response = Http::timeout(config('services.notification_provider.timeout'))
                 ->acceptJson()
-                ->withHeaders(['Idempotency-Key' => $notification->id])
+                ->withHeaders(array_filter([
+                    'Idempotency-Key' => $notification->id,
+                    'X-Correlation-ID' => Context::get('correlation_id'),
+                ]))
                 ->post(config('services.notification_provider.url'), [
                     'to' => $notification->recipient,
                     'channel' => $notification->channel->value,

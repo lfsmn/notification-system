@@ -65,6 +65,13 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'json' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/laravel.json'),
+            'formatter' => Monolog\Formatter\JsonFormatter::class,
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

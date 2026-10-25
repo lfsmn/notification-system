@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\V1\NotificationController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\MetricsController;
 
 Route::prefix('v1')->group(function () {
     Route::post('notifications', [NotificationController::class, 'store']);
@@ -10,4 +12,6 @@ Route::prefix('v1')->group(function () {
     Route::get('notifications/{notification}', [NotificationController::class, 'show'])->whereUuid('notification');
     Route::get('batches/{batch}', [NotificationController::class, 'showBatch'])->whereUuid('batch');
     Route::post('notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->whereUuid('notification');
+    Route::get('health', HealthController::class);
+    Route::get('metrics', MetricsController::class);
 });

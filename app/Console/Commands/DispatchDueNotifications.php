@@ -8,6 +8,8 @@ use App\Models\Notification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Context;
+use Illuminate\Support\Str;
 
 class DispatchDueNotifications extends Command
 {
@@ -19,6 +21,7 @@ class DispatchDueNotifications extends Command
 
     public function handle(): int
     {
+        Context::add('correlation_id', 'scheduler-'.Str::uuid());
         $due = $this->dispatchDue((int) $this->option('limit'));
         $recovered = $this->recoverStuck();
 
