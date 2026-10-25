@@ -1,6 +1,68 @@
+x-app: &app
+  build: .
+  image: notification-system-app
+  restart: unless-stopped
+  environment: &app-env
+    APP_NAME: "Notification System"
+    APP_ENV: local
+    APP_DEBUG: "true"
+    # Local development key only. Never reuse this value outside of local development.
+    APP_KEY: ${APP_KEY:-base64:t/26v0qbE8sXQiDCvY2THPq7ttCml8SZWVe1JurxIOE=}
+    APP_URL: http://localhost:8000
+    LOG_CHANNEL: stderr
+    LOG_STDERR_FORMATTER: Monolog\Formatter\JsonFormatter
+    DB_CONNECTION: pgsql
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_DATABASE: notification_system
+    DB_USERNAME: app
+    DB_PASSWORD: secret
+    REDIS_CLIENT: predis
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    QUEUE_CONNECTION: redis
+    CACHE_STORE: redis
+    SESSION_DRIVER: database
+    NOTIFICATION_PROVIDER_URL: ${NOTIFICATION_PROVIDER_URL:?Set NOTIFICATION_PROVIDER_URL in .env}
+    NOTIFICATION_PROVIDER_TIMEOUT: 5
+    NOTIFICATION_RATE_LIMIT_PER_SECOND: 100
+
 services:
+  app:
+    <<: *app
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost:8000/up') === false ? 1 : 0);"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "--queue=high,normal,low"]
+    depends_on:
+      app:
+        condition: service_healthy
+
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      app:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: notification_system
       POSTGRES_USER: app
@@ -9,11 +71,27 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d notification_system"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
 volumes:
   pgdata:
+  redisdata:
