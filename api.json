@@ -653,7 +653,11 @@
                             "type": "object",
                             "properties": {
                                 "idempotency_key": {
-                                    "type": "string"
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "maxLength": 255
                                 }
                             }
                         },

@@ -6,15 +6,15 @@ use App\Enums\NotificationStatus;
 use App\Jobs\SendNotification;
 use App\Models\Notification;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Str;
 
 class DispatchDueNotifications extends Command
 {
     protected $signature = 'notifications:dispatch-due {--limit=1000}';
-  
+
     protected $description = 'Queue scheduled notifications that are due and recover notifications stuck in processing';
 
     private const STUCK_AFTER_MINUTES = 5;

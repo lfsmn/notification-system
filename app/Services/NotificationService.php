@@ -3,17 +3,16 @@
 namespace App\Services;
 
 use App\Enums\NotificationStatus;
-use App\Models\Notification;
 use App\Jobs\SendNotification;
+use App\Models\Notification;
 use App\Models\NotificationBatch;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class NotificationService
 {
-
     public function create(array $data): Notification
     {
         $notification = $this->store($data);
@@ -21,7 +20,6 @@ class NotificationService
 
         return $notification;
     }
-
 
     /**
      * @return array{0: NotificationBatch, 1: Notification[], 2: bool}
@@ -119,5 +117,4 @@ class NotificationService
 
         return $updated === 1;
     }
-
 }

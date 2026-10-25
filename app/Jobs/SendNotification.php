@@ -3,15 +3,15 @@
 namespace App\Jobs;
 
 use App\Enums\NotificationStatus;
+use App\Exceptions\ProviderException;
 use App\Models\Notification;
 use App\Services\NotificationProviderClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Log;
-use App\Exceptions\ProviderException;
 use Illuminate\Support\Facades\DB;
-use Throwable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Throwable;
 
 class SendNotification implements ShouldQueue
 {
@@ -26,11 +26,8 @@ class SendNotification implements ShouldQueue
     public int $tries = 1;
 
     public int $timeout = 30;
-    
-    public function __construct(public string $notificationId)
-    {
 
-    }
+    public function __construct(public string $notificationId) {}
 
     /**
      * Execute the job.
@@ -45,7 +42,7 @@ class SendNotification implements ShouldQueue
             return;
         }
 
-        if (!$this->acquireRateLimitSlot($notification)) {
+        if (! $this->acquireRateLimitSlot($notification)) {
             self::dispatch($notification->id)
                 ->onQueue($notification->priority->value)
                 ->delay(now()->addSecond());

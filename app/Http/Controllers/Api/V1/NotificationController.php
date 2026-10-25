@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\NotificationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ListNotificationsRequest;
+use App\Http\Requests\StoreNotificationBatchRequest;
 use App\Http\Requests\StoreNotificationRequest;
 use App\Http\Resources\NotificationResource;
+use App\Models\Notification;
+use App\Models\NotificationBatch;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
-use App\Http\Requests\StoreNotificationBatchRequest;
-use App\Models\Notification;
-use App\Enums\NotificationStatus;
-use App\Models\NotificationBatch;
-use App\Http\Requests\ListNotificationsRequest;
 
 class NotificationController extends Controller
 {
@@ -76,7 +76,7 @@ class NotificationController extends Controller
 
     public function cancel(Notification $notification): JsonResponse
     {
-        if (!$this->service->cancel($notification)) {
+        if (! $this->service->cancel($notification)) {
             $notification->refresh();
 
             return response()->json([

@@ -23,7 +23,7 @@ class StoreNotificationBatchRequest extends FormRequest
         $items = $this->input('notifications');
 
         if (is_array($items) && count($items) <= 1000) {
-           foreach (array_keys($items) as $index) {
+            foreach (array_keys($items) as $index) {
                 $itemRules = StoreNotificationRequest::notificationRules(
                     $this->input("notifications.$index.channel"),
                     "notifications.$index.",

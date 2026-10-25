@@ -2,18 +2,17 @@
 
 namespace App\Services;
 
-use App\Models\Notification;
-use Illuminate\Support\Facades\Http;
-use RuntimeException;
 use App\Exceptions\ProviderException;
+use App\Models\Notification;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Context;
+use Illuminate\Support\Facades\Http;
 
 class NotificationProviderClient
 {
     public function send(Notification $notification): string
     {
-       try {
+        try {
             $response = Http::timeout(config('services.notification_provider.timeout'))
                 ->acceptJson()
                 ->withHeaders(array_filter([
@@ -36,6 +35,5 @@ class NotificationProviderClient
         $retryable = $response->status() === 429 || $response->serverError();
 
         throw new ProviderException("Provider returned HTTP {$response->status()}", $retryable);
-    
     }
 }

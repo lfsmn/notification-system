@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Cache;
 
 class MetricsController extends Controller
 {
- 
     public function __invoke(MetricsService $metrics): JsonResponse
     {
         return response()->json(

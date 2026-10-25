@@ -1,58 +1,127 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Notification System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A notification service built with Laravel 13, PostgreSQL and Redis. It accepts SMS, email and
+push notifications over a REST API and sends them in the background through queue workers.
 
-## About Laravel
+## Running the project
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+You need Docker.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1. Go to [webhook.site](https://webhook.site), copy your URL and click **Edit**. Set the response
+   status to `202` and the body to:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+   ```json
+   { "messageId": "8f14e45f-ceea-467a-9e5b-2b6a1c2f3d4e", "status": "accepted", "timestamp": "2026-01-01T00:00:00Z" }
+   ```
 
-## Learning Laravel
+2. Copy the env file and put your webhook URL in `NOTIFICATION_PROVIDER_URL`:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+   ```bash
+   cp .env.example .env
+   ```
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+3. Start everything:
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+   ```bash
+   docker compose up -d --build
+   ```
 
-## Agentic Development
+This starts the API (http://localhost:8000), a queue worker, the scheduler, PostgreSQL and Redis.
+Migrations run automatically.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- API docs: http://localhost:8000/docs/api (OpenAPI file: [`api.json`](api.json))
+- Run tests: `docker compose exec app php artisan test`
+- Worker logs: `docker compose logs -f worker`
+
+The passwords and the fallback `APP_KEY` in `docker-compose.yml` are only for local development.
+
+## API
+
+All endpoints are under `/api/v1`. Example requests are in [`request.http`](request.http).
+
+| Method | Endpoint                     | Description                              |
+|--------|------------------------------|------------------------------------------|
+| POST   | `/notifications`             | Create a notification                    |
+| POST   | `/notifications/batch`       | Create up to 1000 notifications          |
+| GET    | `/notifications/{id}`        | Get a notification                       |
+| GET    | `/notifications`             | List (filters: `status`, `channel`, `batch_id`, `from`, `to`) |
+| POST   | `/notifications/{id}/cancel` | Cancel a pending or queued notification  |
+| GET    | `/batches/{id}`              | Status counts of a batch                 |
+| GET    | `/metrics`                   | Queue depth, success/failure rates, latency |
+| GET    | `/health`                    | Database and Redis status                |
+
+Example:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+curl -X POST http://localhost:8000/api/v1/notifications \
+  -H "Accept: application/json" -H "Content-Type: application/json" \
+  -d '{"channel": "sms", "recipient": "+905551234567", "content": "Flash sale!", "priority": "high", "idempotency_key": "campaign-42-user-1"}'
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+- `channel`: `sms`, `email` or `push`
+- `content` limit: 160 characters for SMS, 500 for push, 10000 for email
+- `priority`: `high`, `normal` (default) or `low`
+- `scheduled_at` (optional): a future date, stored in UTC
+- `idempotency_key` (optional): sending the same key again returns the first notification with `200` instead of creating a new one
 
-## Contributing
+New notifications return `202 Accepted` because they are only queued at that point, not sent yet.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## How it works
 
-## Code of Conduct
+```mermaid
+flowchart LR
+    Client --> API
+    API --> DB[(PostgreSQL)]
+    API --> Q[[Redis queues: high / normal / low]]
+    Scheduler --> DB
+    Scheduler --> Q
+    Q --> Worker
+    Worker --> DB
+    Worker --> Provider[webhook.site]
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The API saves the notification to PostgreSQL and puts a job on the Redis queue for its priority.
+The worker reads `high` first, then `normal`, then `low`, sends the notification to the provider
+and updates its status. PostgreSQL is the source of truth; the queue only holds notification ids.
 
-## Security Vulnerabilities
+Statuses: `pending` (scheduled) → `queued` → `processing` → `sent` or `failed`.
+`pending` and `queued` notifications can be `cancelled`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Design choices
 
-## License
+**Idempotency.** `idempotency_key` has a unique index and I use `createOrFirst`, so the database
+decides if a notification already exists. This also works when the same request comes twice at the
+same time. Batches have their own key as well, so retrying a batch request does not create a second
+batch.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**No double sends.** Status changes are done with a conditional update
+(`UPDATE ... WHERE status = 'queued'`). A worker only sends a notification it managed to move to
+`processing`, so a duplicate job or a cancel at the same moment can't cause a second send.
+
+**Rate limit.** Max 100 messages per second per channel. The counter is in Redis so all workers share
+it. If the limit is reached the job is put back with a one second delay, without counting as an attempt.
+
+**Retries.** Timeouts, `5xx` and `429` are retried up to 5 times with exponential backoff
+(30s, 90s, 270s, 810s) plus some random jitter so retries don't all happen at once. Other `4xx` errors
+fail immediately. `attempts` and `last_error` are visible in the API. I chose at-least-once delivery:
+after a timeout I retry instead of risking a lost message, and I send the notification id as an
+`Idempotency-Key` header to the provider.
+
+**Scheduler.** Runs every 10 seconds. It queues scheduled notifications whose time has come (using
+`FOR UPDATE SKIP LOCKED` so two schedulers don't pick the same rows) and requeues notifications that
+are stuck in `processing` for more than 5 minutes, for example when a worker crashed.
+
+**Observability.** Every request gets an `X-Correlation-ID`. It is added to all log lines (also in the
+worker, through Laravel's `Context`) and sent to the provider. Logs are written as JSON. `/health`
+checks PostgreSQL and Redis, `/metrics` shows queue depth per priority, open notifications and per
+channel success rate and latency (average and p95) for the last hour.
+
+## Tests
+
+```bash
+php artisan test
+```
+
+Tests use a separate PostgreSQL database (`notification_system_test`) because the code uses
+PostgreSQL features. Queues and HTTP calls are faked. GitHub Actions runs Pint and the tests on every push.
+
