@@ -9,6 +9,7 @@ use App\Models\NotificationBatch;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
 
 class NotificationService
 {
@@ -74,6 +75,11 @@ class NotificationService
 
     private function store(array $data): Notification
     {
+        // UTC in database
+        if (isset($data['scheduled_at'])) {
+            $data['scheduled_at'] = Carbon::parse($data['scheduled_at'])->utc();
+        }
+
         $data['status'] = isset($data['scheduled_at']) ? NotificationStatus::Pending : NotificationStatus::Queued;
         $key = $data['idempotency_key'] ?? null;
 
