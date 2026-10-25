@@ -18,7 +18,7 @@ Content-Type: application/json
 
 {
   "channel": "email",
-  "recipient": "elifosmanoglu14@gmail.com",
+  "recipient": "test@gmail.com",
   "content": "<p><b>Merhaba!</b></p>",
   "priority": "high"
 }
